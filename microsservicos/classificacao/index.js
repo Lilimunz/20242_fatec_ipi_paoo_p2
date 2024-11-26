@@ -1,7 +1,14 @@
+require('dotenv').config()
+
 const express = require('express')
 const axios = require('axios')
 const app = express()
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 app.use(express.json())
+
+const genAI = new GoogleGenerativeAI(process.env.APIKEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
 const palavraChave = 'importante'
 const funcoes = {
   ObservacaoCriada: (observacao) => {
@@ -11,8 +18,25 @@ const funcoes = {
         type: 'ObservacaoClassificada',
         payload: observacao
       })
+  },
+  LembreteCriado: async (lembrete) => {
+    const prompt = `Classifique o lembrete com base na urgencia, ele parece urgente? "${lembrete.texto}"`;
+    const result = await model.generateContent(prompt);
+    // Extrai a classificação da resposta e atualiza o status do lembrete
+    const classificacao = result.response.text().trim().toLowerCase();
+
+    lembrete.status = classificacao.includes('sim') ? 'Urgente' : 'Normal';
+    axios.post('http://localhost:10000/eventos', {
+        type: 'LembreteClassificado',
+        payload: {
+          id: lembrete.id,
+          texto: lembrete.texto,
+          status: lembrete.status
+        }
+      })
   }
 }
+
 app.post('/eventos', (req, res) => {
   try{
     const evento = req.body

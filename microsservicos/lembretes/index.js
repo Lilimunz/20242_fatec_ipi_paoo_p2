@@ -17,6 +17,7 @@ app.use(express.json())
 */
 let id = 1
 const baseLembretes = {}
+
 //GET /lembretes
 app.get('/lembretes', (req, res) => {
   res.status(200).json(baseLembretes)  
@@ -24,7 +25,7 @@ app.get('/lembretes', (req, res) => {
 //POST /lembretes
 app.post('/lembretes', async function(req, res){
   const texto = req.body.texto
-  const lembrete = { id: id, texto: texto }
+  const lembrete = { id: id, texto: texto, status: 'aguardando' }
   baseLembretes[id] = lembrete
   id++
   await axios.post('http://localhost:10000/eventos', {
